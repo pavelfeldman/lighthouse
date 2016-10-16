@@ -32,6 +32,7 @@ const yargs = require('yargs');
 import * as Printer from './printer';
 const lighthouse = require('../lighthouse-core');
 const assetSaver = require('../lighthouse-core/lib/asset-saver.js');
+const log = require('../lighthouse-core/lib/log');
 import {ChromeLauncher} from './chrome-launcher';
 import * as Commands from './commands/commands';
 
@@ -148,6 +149,8 @@ if (cli.verbose) {
   flags.logLevel = 'error';
 }
 
+log.setLevel(flags.logLevel);
+
 const cleanup = {
   fns: [],
   register(fn) {
@@ -168,7 +171,7 @@ function launchChromeAndRun(addresses) {
   return launcher
     .isDebuggerReady()
     .catch(() => {
-      console.log('Launching Chrome...');
+      log.log('Lighthouse CLI', 'Launching Chrome...');
       return launcher.run();
     })
     .then(() => lighthouseRun(addresses))
