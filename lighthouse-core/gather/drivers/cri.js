@@ -16,23 +16,15 @@
  */
 'use strict';
 
-const Driver = require('./driver.js');
-const EventEmitter = require('events').EventEmitter;
+const Connection = require('./connection.js');
 const WebSocket = require('ws');
 const http = require('http');
 const port = process.env.PORT || 9222;
 
-class CriDriver extends Driver {
-  constructor() {
-    super();
-    this._lastCommandId = 0;
-    /** @type {!Map<number, function(object)}*/
-    this._callbacks = new Map();
-    this._eventEmitter = new EventEmitter();
-  }
-
+class CriConnection extends Connection {
   /**
-   * @return {!Promise<undefined>}
+   * @override
+   * @return {!Promise}
    */
   connect() {
     return this._runJsonCommand('new').then(response => {
@@ -43,7 +35,8 @@ class CriDriver extends Driver {
           this._ws = ws;
           resolve();
         });
-        ws.on('message', data => this._dispatch(data));
+        ws.on('message', data => this.dispatchRawMessage(data));
+        ws.on('close', this.dispose.bind(this));
         ws.on('error', reject);
       });
     });
@@ -74,6 +67,9 @@ class CriDriver extends Driver {
     });
   }
 
+  /**
+   * @override
+   */
   disconnect() {
     if (!this._ws) {
       return Promise.reject('connect() must be called before attempting to disconnect.');
@@ -85,47 +81,12 @@ class CriDriver extends Driver {
   }
 
   /**
-   * Call protocol methods
-   * @param {!string} method
-   * @param {!Object} params
-   * @return {!Promise}
-   */
-  sendCommand(method, params) {
-    if (!this._ws) {
-      return Promise.reject('connect() must be called before attempting to send a command.');
-    }
-    this.formattedLog('method => browser', {method: method, params: params}, 'verbose');
-    var id = ++this._lastCommandId;
-    var message = JSON.stringify({id: id, method: method, params: params || {}});
-    this._ws.send(message);
-    return new Promise((resolve, reject) => {
-      this._callbacks.set(id, {resolve: resolve, reject: reject, method: method});
-    });
-  }
-
-  /**
+   * @override
    * @param {string} message
    */
-  _dispatch(message) {
-    var object = JSON.parse(message);
-    if ('id' in object) {
-      var callback = this._callbacks.get(object.id);
-      this._callbacks.delete(object.id);
-      if (object.error) {
-        callback.reject(object.result);
-        this.formattedLog('method <= browser ERR',
-            {method: callback.method, params: object.result}, 'error');
-        return;
-      }
-      callback.resolve(object.result);
-      this.formattedLog('method <= browser OK',
-          {method: callback.method, params: object.result}, 'verbose');
-      return;
-    }
-    this.formattedLog('method <= browser EVENT',
-        {method: object.method, params: object.result}, 'verbose');
-    this._eventEmitter.emit(object.method, object.params);
+  sendRawMessage(message) {
+    this._ws.send(message);
   }
 }
 
-module.exports = CriDriver;
+module.exports = CriConnection;
