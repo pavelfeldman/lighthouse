@@ -17,104 +17,114 @@
 'use strict';
 
 const Driver = require('./driver.js');
-const chromeRemoteInterface = require('chrome-remote-interface');
+const EventEmitter = require('events').EventEmitter;
+const WebSocket = require('ws');
+const http = require('http');
 const port = process.env.PORT || 9222;
-
-const log = require('../../lib/log.js');
 
 class CriDriver extends Driver {
   constructor() {
     super();
-
-    /**
-     * Chrome remote interface instance.
-     */
-    this._cri = null;
+    this._lastCommandId = 0;
+    /** @type {!Map<number, function(object)}*/
+    this._callbacks = new Map();
+    this._eventEmitter = new EventEmitter();
   }
 
   /**
    * @return {!Promise<undefined>}
    */
   connect() {
-    return new Promise((resolve, reject) => {
-      if (this._cri) {
-        return resolve();
-      }
-
-      // Make a new tab, stopping Chrome from accidentally giving CRI an "Other" tab.
-      // Also disable the lint check because CRI uses "New" for the function name.
-      /* eslint-disable new-cap */
-      chromeRemoteInterface.New((err, tab) => {
-        if (err) {
-          log.warn('CRI driver', 'cannot create new tab, will reuse tab.', err);
-        }
-
-        chromeRemoteInterface({port: port, chooseTab: tab}, chrome => {
-          this._tab = tab;
-          this._cri = chrome;
-          // The CRI instance is also an EventEmitter, so use directly for event dispatch.
-          this._eventEmitter = chrome;
-          this.enableRuntimeEvents().then(_ => {
-            resolve();
-          });
-        }).on('error', e => reject(e));
-      });
-      /* eslint-enable new-cap */
-    });
-  }
-
-  disconnect() {
-    return new Promise((resolve, reject) => {
-      if (!this._tab) {
-        this._cri.close();
-        return resolve();
-      }
-
-      /* eslint-disable new-cap */
-      chromeRemoteInterface.Close({
-        id: this._tab.id
-      }, err => {
-        if (err) {
-          reject(err);
-        } else {
+    return this._runJsonCommand('new').then(response => {
+      var url = response.webSocketDebuggerUrl;
+      return new Promise((resolve, reject) => {
+        var ws = new WebSocket(url);
+        ws.on('open', () => {
+          this._ws = ws;
           resolve();
-        }
+        });
+        ws.on('message', data => this._dispatch(data));
+        ws.on('error', reject);
       });
-      /* eslint-enable new-cap */
-    })
-    .then(() => {
-      if (this._cri) {
-        this._cri.close();
-      }
-      this._tab = null;
-      this._cri = null;
-      this._eventEmitter = null;
     });
   }
 
   /**
+   * @return {!Promise<string>}
+   */
+  _runJsonCommand(command) {
+    return new Promise((resolve, reject) => {
+      http.get({
+        hostname: 'localhost',
+        port: port,
+        path: '/json/' + command
+      }, response => {
+        var data = '';
+        response.on('data', chunk => {
+          data += chunk;
+        });
+        response.on('end', _ => {
+          if (response.statusCode === 200) {
+            resolve(JSON.parse(data));
+            return;
+          }
+          reject('Unable to fetch, status: ' + response.statusCode);
+        });
+      });
+    });
+  }
+
+  disconnect() {
+    if (!this._ws) {
+      return Promise.reject('connect() must be called before attempting to disconnect.');
+    }
+    this._ws.removeAllListeners();
+    this._ws.close();
+    this._ws = null;
+    return Promise.resolve();
+  }
+
+  /**
    * Call protocol methods
-   * @param {!string} command
+   * @param {!string} method
    * @param {!Object} params
    * @return {!Promise}
    */
-  sendCommand(command, params) {
-    if (this._cri === null) {
+  sendCommand(method, params) {
+    if (!this._ws) {
       return Promise.reject('connect() must be called before attempting to send a command.');
     }
-
+    this.formattedLog('method => browser', {method: method, params: params}, 'verbose');
+    var id = ++this._lastCommandId;
+    var message = JSON.stringify({id: id, method: method, params: params || {}});
+    this._ws.send(message);
     return new Promise((resolve, reject) => {
-      this.formattedLog('method => browser', {method: command, params: params}, 'verbose');
-
-      this._cri.send(command, params, (err, result) => {
-        if (err) {
-          this.formattedLog('method <= browser ERR', {method: command, params: result}, 'error');
-          return reject(result);
-        }
-        this.formattedLog('method <= browser OK', {method: command, params: result}, 'verbose');
-        resolve(result);
-      });
+      this._callbacks.set(id, {resolve: resolve, reject: reject, method: method});
     });
+  }
+
+  /**
+   * @param {string} message
+   */
+  _dispatch(message) {
+    var object = JSON.parse(message);
+    if ('id' in object) {
+      var callback = this._callbacks.get(object.id);
+      this._callbacks.delete(object.id);
+      if (object.error) {
+        callback.reject(object.result);
+        this.formattedLog('method <= browser ERR',
+            {method: callback.method, params: object.result}, 'error');
+        return;
+      }
+      callback.resolve(object.result);
+      this.formattedLog('method <= browser OK',
+          {method: callback.method, params: object.result}, 'verbose');
+      return;
+    }
+    this.formattedLog('method <= browser EVENT',
+        {method: object.method, params: object.result}, 'verbose');
+    this._eventEmitter.emit(object.method, object.params);
   }
 }
 
