@@ -17,6 +17,7 @@
 'use strict';
 
 const ExtensionProtocol = require('../../../lighthouse-core/gather/drivers/extension');
+const RawProtocol = require('../../../lighthouse-core/gather/drivers/raw');
 const Runner = require('../../../lighthouse-core/runner');
 const Config = require('../../../lighthouse-core/config/config');
 const defaultConfig = require('../../../lighthouse-core/config/default.json');
@@ -44,7 +45,7 @@ window.createPageAndPopulate = function(results) {
  * @param {!Array<string>} requestedAudits Names of audits to run.
  * @return {!Promise}
  */
-window.runLighthouse = function(options, requestedAudits) {
+window.runLighthouseInExtension = function(options, requestedAudits) {
   // Default to 'info' logging level.
   log.setLevel('info');
   const driver = new ExtensionProtocol();
@@ -70,6 +71,33 @@ window.runLighthouse = function(options, requestedAudits) {
       console.error(e);
       throw e;
     });
+};
+
+/**
+ * @param {!RawProtocol.Port} port
+ * @param {string} url
+ * @param {!Object} options Lighthouse options.
+ * @param {!Array<string>} requestedAudits Names of audits to run.
+ * @return {!Promise}
+ */
+window.runLighthouseInWorker = function(port, url, options, requestedAudits) {
+  // Default to 'info' logging level.
+  log.setLevel('info');
+  const driver = new RawProtocol(port);
+
+  // Always start with a freshly parsed default config.
+  const runConfig = JSON.parse(JSON.stringify(defaultConfig));
+
+  // Filter out audits not requested.
+  requestedAudits = new Set(requestedAudits);
+  runConfig.audits = runConfig.audits.filter(audit => requestedAudits.has(audit));
+  const config = new Config(runConfig);
+
+  // Add url and config to fresh options object.
+  const runOptions = Object.assign({}, options, {url, config});
+
+  // Run Lighthouse.
+  return Runner.run(driver, runOptions);
 };
 
 /**
@@ -143,8 +171,10 @@ window.listenForStatus = function(callback) {
   log.events.addListener('status', callback);
 };
 
-chrome.runtime.onInstalled.addListener(details => {
-  if (details.previousVersion) {
-    console.log('previousVersion', details.previousVersion);
-  }
-});
+if (window.chrome) {
+  chrome.runtime.onInstalled.addListener(details => {
+    if (details.previousVersion) {
+      console.log('previousVersion', details.previousVersion);
+    }
+  });
+}
