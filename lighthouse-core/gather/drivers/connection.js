@@ -50,11 +50,12 @@ class Connection {
    */
   sendCommand(method, params) {
     log.formatProtocol('method => browser', {method: method, params: params}, 'verbose');
-    var id = ++this._lastCommandId;
-    var message = JSON.stringify({id: id, method: method, params: params || {}});
+    const id = ++this._lastCommandId;
+    params = params || {};
+    const message = JSON.stringify({id, method, params});
     this.sendRawMessage(message);
     return new Promise((resolve, reject) => {
-      this._callbacks.set(id, {resolve: resolve, reject: reject, method: method});
+      this._callbacks.set(id, {resolve, reject, method});
     });
   }
 
@@ -64,8 +65,8 @@ class Connection {
    * @param {function(...)} cb
    */
   on(eventName, cb) {
-    if (eventName !== 'message') {
-      throw new Error('Only supports "message" events');
+    if (eventName !== 'notification') {
+      throw new Error('Only supports "notification" events');
     }
     this._eventEmitter.on(eventName, cb);
   }
@@ -80,29 +81,31 @@ class Connection {
     return Promise.reject(new Error('Not implemented'));
   }
 
+  /* eslint-enable no-unused-vars */
+
   /**
    * @param {string} message
    * @protected
    */
-  dispatchRawMessage(message) {
-    var object = JSON.parse(message);
+  handleRawMessage(message) {
+    const object = JSON.parse(message);
     if (object.id) {
-      var callback = this._callbacks.get(object.id);
+      const callback = this._callbacks.get(object.id);
       this._callbacks.delete(object.id);
       if (object.error) {
-        callback.reject(object.result);
         log.formatProtocol('method <= browser ERR',
             {method: callback.method, params: object.result}, 'error');
+        callback.reject(object.result);
         return;
       }
-      callback.resolve(object.result);
       log.formatProtocol('method <= browser OK',
           {method: callback.method, params: object.result}, 'verbose');
+      callback.resolve(object.result);
       return;
     }
     log.formatProtocol('method <= browser EVENT',
         {method: object.method, params: object.result}, 'verbose');
-    this.dispatchNotification(object.method, object.params);
+    this.emitNotification(object.method, object.params);
   }
 
   /**
@@ -110,8 +113,8 @@ class Connection {
    * @param {!Object} params
    * @protected
    */
-  dispatchNotification(method, params) {
-    this._eventEmitter.emit('message', {method: method, params: params});
+  emitNotification(method, params) {
+    this._eventEmitter.emit('notification', {method: method, params: params});
   }
 
   /**

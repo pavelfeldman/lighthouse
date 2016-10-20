@@ -29,14 +29,14 @@ class CriConnection extends Connection {
    */
   connect() {
     return this._runJsonCommand('new').then(response => {
-      var url = response.webSocketDebuggerUrl;
+      const url = response.webSocketDebuggerUrl;
       return new Promise((resolve, reject) => {
-        var ws = new WebSocket(url);
+        const ws = new WebSocket(url);
         ws.on('open', () => {
           this._ws = ws;
           resolve();
         });
-        ws.on('message', data => this.dispatchRawMessage(data));
+        ws.on('message', data => this.handleRawMessage(data));
         ws.on('close', this.dispose.bind(this));
         ws.on('error', reject);
       });
@@ -62,7 +62,7 @@ class CriConnection extends Connection {
             resolve(JSON.parse(data));
             return;
           }
-          reject('Unable to fetch, status: ' + response.statusCode);
+          reject('Unable to fetch webSocketDebuggerUrl, status: ' + response.statusCode);
         });
       });
     });

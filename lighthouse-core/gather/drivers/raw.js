@@ -42,11 +42,13 @@ class Port {
   close() { }
 }
 
+/* eslint-enable no-unused-vars */
+
 class RawConnection extends Connection {
   constructor(port) {
     super();
     this._port = port;
-    this._port.on('message', this.dispatchRawMessage.bind(this));
+    this._port.on('message', this.handleRawMessage.bind(this));
     this._port.on('close', this.dispose.bind(this));
   }
 

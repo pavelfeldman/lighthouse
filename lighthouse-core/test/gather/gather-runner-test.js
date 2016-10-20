@@ -82,9 +82,17 @@ describe('GatherRunner', function() {
     const driver = {
       beginEmulation() {
         calledEmulation = true;
+        return Promise.resolve();
       },
-      cleanAndDisableBrowserCaches() {},
-      clearDataForOrigin() {}
+      enableRuntimeEvents() {
+        return Promise.resolve();
+      },
+      cleanAndDisableBrowserCaches() {
+        return Promise.resolve();
+      },
+      clearDataForOrigin() {
+        return Promise.resolve();
+      }
     };
 
     return GatherRunner.setupDriver(driver, {
@@ -101,9 +109,17 @@ describe('GatherRunner', function() {
     const driver = {
       beginEmulation() {
         calledEmulation = true;
+        return Promise.resolve();
       },
-      cleanAndDisableBrowserCaches() {},
-      clearDataForOrigin() {}
+      enableRuntimeEvents() {
+        return Promise.resolve();
+      },
+      cleanAndDisableBrowserCaches() {
+        return Promise.resolve();
+      },
+      clearDataForOrigin() {
+        return Promise.resolve();
+      }
     };
 
     return GatherRunner.setupDriver(driver, {

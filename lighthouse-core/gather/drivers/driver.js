@@ -37,7 +37,7 @@ class Driver {
     this._traceCategories = Driver.traceCategories;
     this._eventEmitter = new EventEmitter();
     this._connection = connection;
-    connection.on('message', event => this._eventEmitter.emit(event.method, event.params));
+    connection.on('notification', event => this._eventEmitter.emit(event.method, event.params));
   }
 
   static get traceCategories() {
@@ -63,7 +63,7 @@ class Driver {
    * @return {!Promise<null>}
    */
   connect() {
-    return this._connection.connect().then(_ => this.sendCommand('Runtime.enable'));
+    return this._connection.connect();
   }
 
   disconnect() {
@@ -451,6 +451,10 @@ class Driver {
       this._networkRecorder = null;
       this._networkRecords = [];
     });
+  }
+
+  enableRuntimeEvents() {
+    return this.sendCommand('Runtime.enable');
   }
 
   beginEmulation() {

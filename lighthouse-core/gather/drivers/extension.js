@@ -34,7 +34,7 @@ class ExtensionConnection extends Connection {
   _onEvent(source, method, params) {
     // log events received
     log.log('<=', method, params);
-    this.dispatchNotification(method, params);
+    this.emitNotification(method, params);
   }
 
   _onUnexpectedDetach(debuggee, detachReason) {
