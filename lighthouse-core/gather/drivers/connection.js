@@ -49,7 +49,7 @@ class Connection {
    * @return {!Promise}
    */
   sendCommand(method, params) {
-    this.formattedLog('method => browser', {method: method, params: params}, 'verbose');
+    log.formatProtocol('method => browser', {method: method, params: params}, 'verbose');
     var id = ++this._lastCommandId;
     var message = JSON.stringify({id: id, method: method, params: params || {}});
     this.sendRawMessage(message);
@@ -86,21 +86,21 @@ class Connection {
    */
   dispatchRawMessage(message) {
     var object = JSON.parse(message);
-    if ('id' in object) {
+    if (object.id) {
       var callback = this._callbacks.get(object.id);
       this._callbacks.delete(object.id);
       if (object.error) {
         callback.reject(object.result);
-        this.formattedLog('method <= browser ERR',
+        log.formatProtocol('method <= browser ERR',
             {method: callback.method, params: object.result}, 'error');
         return;
       }
       callback.resolve(object.result);
-      this.formattedLog('method <= browser OK',
+      log.formatProtocol('method <= browser OK',
           {method: callback.method, params: object.result}, 'verbose');
       return;
     }
-    this.formattedLog('method <= browser EVENT',
+    log.formatProtocol('method <= browser EVENT',
         {method: object.method, params: object.result}, 'verbose');
     this.dispatchNotification(object.method, object.params);
   }
@@ -120,21 +120,6 @@ class Connection {
   dispose() {
     this._eventEmitter.removeAllListeners();
     this._eventEmitter = null;
-  }
-
-  /**
-   * A simple formatting utility for event logging.
-   * @param {string} prefix
-   * @param {!Object} data A JSON-serializable object of event data to log.
-   * @param {string=} level Optional logging level. Defaults to 'log'.
-   */
-  formattedLog(prefix, data, level) {
-    const columns = (!process || process.browser) ? Infinity : process.stdout.columns;
-    const maxLength = columns - data.method.length - prefix.length - 18;
-    // IO.read blacklisted here to avoid logging megabytes of trace data
-    const snippet = (data.params && data.method !== 'IO.read') ?
-        JSON.stringify(data.params).substr(0, maxLength) : '';
-    log[level ? level : 'log'](prefix, data.method, snippet);
   }
 }
 

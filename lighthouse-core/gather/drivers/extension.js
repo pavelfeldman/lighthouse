@@ -112,22 +112,22 @@ class ExtensionConnection extends Connection {
    */
   sendCommand(command, params) {
     return new Promise((resolve, reject) => {
-      this.formattedLog('method => browser', {method: command, params: params}, 'verbose');
+      log.formatProtocol('method => browser', {method: command, params: params}, 'verbose');
       if (!this._tabId) {
         log.error('No tabId set for sendCommand');
       }
       chrome.debugger.sendCommand({tabId: this._tabId}, command, params, result => {
         if (chrome.runtime.lastError) {
-          this.formattedLog('method <= browser ERR', {method: command, params: result}, 'error');
+          log.formatProtocol('method <= browser ERR', {method: command, params: result}, 'error');
           return reject(chrome.runtime.lastError);
         }
 
         if (result.wasThrown) {
-          this.formattedLog('method <= browser ERR', {method: command, params: result}, 'error');
+          log.formatProtocol('method <= browser ERR', {method: command, params: result}, 'error');
           return reject(result.exceptionDetails);
         }
 
-        this.formattedLog('method <= browser OK', {method: command, params: result}, 'verbose');
+        log.formatProtocol('method <= browser OK', {method: command, params: result}, 'verbose');
         resolve(result);
       });
     });
