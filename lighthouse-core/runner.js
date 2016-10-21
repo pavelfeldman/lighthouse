@@ -16,17 +16,20 @@
  */
 'use strict';
 
-const Driver = require('./gather/drivers/driver.js');
-const GatherRunner = require('./gather/gather-runner');
-const Aggregate = require('./aggregator/aggregate');
-const assetSaver = require('./lib/asset-saver');
-const log = require('./lib/log');
 const fs = require('fs');
+const log = require('./lib/log');
 const path = require('path');
 const url = require('url');
 
+const Aggregate = require('./aggregator/aggregate');
+const Driver = require('./gather/drivers/driver.js');
+const GatherRunner = require('./gather/gather-runner');
+const Progress = require('./progress');
+const assetSaver = require('./lib/asset-saver');
+
 class Runner {
-  static run(connection, opts) {
+  static run(progress, connection, opts) {
+    progress = progress || new Progress();
     // Clean opts input.
     opts.flags = opts.flags || {};
 
@@ -72,7 +75,7 @@ class Runner {
       if (validPassesAndAudits) {
         opts.driver = opts.driverMock || new Driver(connection);
         // Finally set up the driver to gather.
-        run = run.then(_ => GatherRunner.run(config.passes, opts));
+        run = run.then(_ => GatherRunner.run(progress, config.passes, opts));
       } else if (validArtifactsAndAudits) {
         run = run.then(_ => {
           return Object.assign(GatherRunner.instantiateComputedArtifacts(), config.artifacts);
@@ -100,10 +103,10 @@ class Runner {
         const status = `Evaluating: ${audit.meta.description}`;
         // Run each audit sequentially, the auditResults array has all our fine work
         return chain.then(_ => {
-          log.log('status', status);
+          progress.updateStatus(status, '', true);
           return audit.audit(artifacts);
         }).then(ret => {
-          log.verbose('statusEnd', status);
+          progress.updateStatus(`${status}... Done`, '', true);
           auditResults.push(ret);
         });
       }, Promise.resolve()).then(_ => auditResults));

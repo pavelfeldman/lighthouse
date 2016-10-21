@@ -23,6 +23,7 @@ if (!environment.checkNodeCompatibility()) {
   process.exit(1);
 }
 
+const Progress = require('./progress');
 const Runner = require('./runner');
 const log = require('./lib/log.js');
 const ChromeProtocol = require('./gather/drivers/cri.js');
@@ -59,9 +60,10 @@ module.exports = function(url, flags, configJSON) {
     const config = new Config(configJSON, flags.configPath);
 
     const connection = new ChromeProtocol();
+    const progress = new Progress();
 
     // kick off a lighthouse run
-    resolve(Runner.run(connection, {url, flags, config}));
+    resolve(Runner.run(progress, connection, {url, flags, config}));
   });
 };
 

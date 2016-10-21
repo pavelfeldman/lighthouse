@@ -36,7 +36,7 @@ describe('Runner', () => {
       ]
     });
 
-    return Runner.run(null, {url, config, driverMock}).then(_ => {
+    return Runner.run(null, null, {url, config, driverMock}).then(_ => {
       assert.ok(typeof config.passes[0].gatherers[0] === 'object');
     });
   });
@@ -49,7 +49,7 @@ describe('Runner', () => {
       ]
     });
 
-    return Runner.run(null, {url, config, driverMock})
+    return Runner.run(null, null, {url, config, driverMock})
       .then(_ => {
         assert.ok(false);
       }, err => {
@@ -71,7 +71,7 @@ describe('Runner', () => {
       }
     });
 
-    return Runner.run({}, {url, config}).then(results => {
+    return Runner.run(null, {}, {url, config}).then(results => {
       // Mostly checking that this did not throw, but check representative values.
       assert.equal(results.initialUrl, url);
       assert.strictEqual(results.audits['is-on-https'].rawValue, true);
@@ -93,7 +93,7 @@ describe('Runner', () => {
       }
     });
 
-    return Runner.run({}, {url, config}).then(results => {
+    return Runner.run(null, {}, {url, config}).then(results => {
       const audits = results.audits;
       assert.equal(audits['user-timings'].rawValue, 2);
     });
@@ -111,7 +111,7 @@ describe('Runner', () => {
       }
     });
 
-    return Runner.run({}, {url, config}).then(results => {
+    return Runner.run(null, {}, {url, config}).then(results => {
       const audits = results.audits;
       assert.equal(audits['user-timings'].rawValue, -1);
       assert(audits['user-timings'].debugString);
@@ -130,7 +130,7 @@ describe('Runner', () => {
       }
     });
 
-    return Runner.run({}, {url, config}).then(results => {
+    return Runner.run(null, {}, {url, config}).then(results => {
       const audits = results.audits;
       assert.equal(audits['critical-request-chains'].rawValue, 9);
     });
@@ -144,7 +144,7 @@ describe('Runner', () => {
       }]
     });
 
-    return Runner.run(null, {url, config, driverMock})
+    return Runner.run(null, null, {url, config, driverMock})
       .then(_ => {
         assert.ok(false);
       }, err => {
@@ -180,7 +180,7 @@ describe('Runner', () => {
       }]
     });
 
-    return Runner.run(null, {url, config, driverMock}).then(results => {
+    return Runner.run(null, null, {url, config, driverMock}).then(results => {
       // Mostly checking that this did not throw, but check representative values.
       assert.equal(results.initialUrl, url);
       assert.strictEqual(results.audits['is-on-https'].rawValue, true);
@@ -215,7 +215,7 @@ describe('Runner', () => {
       }]
     });
 
-    return Runner.run(null, {url, config, driverMock}).then(results => {
+    return Runner.run(null, null, {url, config, driverMock}).then(results => {
       assert.ok(results.lighthouseVersion);
       assert.ok(results.generatedTime);
       assert.equal(results.initialUrl, url);
@@ -226,18 +226,20 @@ describe('Runner', () => {
   });
 
   it('rejects when not given a URL', () => {
-    return Runner.run({}, {}).then(_ => assert.ok(false), _ => assert.ok(true));
+    return Runner.run(null, {}, {}).then(_ => assert.ok(false), _ => assert.ok(true));
   });
 
   it('rejects when given a URL of zero length', () => {
-    return Runner.run({}, {url: ''}).then(_ => assert.ok(false), _ => assert.ok(true));
+    return Runner.run(null, {}, {url: ''}).then(_ => assert.ok(false), _ => assert.ok(true));
   });
 
   it('rejects when given a URL without protocol', () => {
-    return Runner.run({}, {url: 'localhost'}).then(_ => assert.ok(false), _ => assert.ok(true));
+    return Runner.run(null, {}, {url: 'localhost'})
+        .then(_ => assert.ok(false), _ => assert.ok(true));
   });
 
   it('rejects when given a URL without hostname', () => {
-    return Runner.run({}, {url: 'https://'}).then(_ => assert.ok(false), _ => assert.ok(true));
+    return Runner.run(null, {}, {url: 'https://'})
+        .then(_ => assert.ok(false), _ => assert.ok(true));
   });
 });

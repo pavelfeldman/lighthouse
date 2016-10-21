@@ -18,11 +18,13 @@
 
 /* eslint-env mocha */
 
+const assert = require('assert');
+const path = require('path');
+
+const Config = require('../../config/config');
 const Gatherer = require('../../gather/gatherers/gatherer');
 const GatherRunner = require('../../gather/gather-runner');
-const assert = require('assert');
-const Config = require('../../config/config');
-const path = require('path');
+const Progress = require('../../progress');
 
 class TestGatherer extends Gatherer {
   constructor() {
@@ -58,7 +60,7 @@ describe('GatherRunner', function() {
       }
     };
 
-    return GatherRunner.loadPage(driver, {
+    return GatherRunner.loadPage(new Progress(), driver, {
       flags: {},
       config: {}
     }).then(res => {
@@ -72,7 +74,7 @@ describe('GatherRunner', function() {
     const config = new Config({});
     const options = {url, driver, config};
 
-    return GatherRunner.run([], options).then(_ => {
+    return GatherRunner.run(new Progress(), [], options).then(_ => {
       assert.equal(typeof options.flags, 'object');
     });
   });
@@ -95,7 +97,7 @@ describe('GatherRunner', function() {
       }
     };
 
-    return GatherRunner.setupDriver(driver, {
+    return GatherRunner.setupDriver(new Progress(), driver, {
       flags: {
         mobile: true
       }
@@ -122,7 +124,7 @@ describe('GatherRunner', function() {
       }
     };
 
-    return GatherRunner.setupDriver(driver, {
+    return GatherRunner.setupDriver(new Progress(), driver, {
       flags: {}
     }).then(_ => {
       assert.equal(calledEmulation, false);
@@ -149,7 +151,7 @@ describe('GatherRunner', function() {
       gatherers: [{}]
     };
 
-    return GatherRunner.loadPage(driver, {config}).then(_ => {
+    return GatherRunner.loadPage(new Progress(), driver, {config}).then(_ => {
       assert.equal(calledTrace, true);
     });
   });
@@ -174,7 +176,7 @@ describe('GatherRunner', function() {
       }]
     };
 
-    return GatherRunner.afterPass({driver, config}).then(passData => {
+    return GatherRunner.afterPass(new Progress(), {driver, config}).then(passData => {
       assert.equal(calledTrace, true);
       assert.equal(passData.trace, fakeTraceData);
     });
@@ -197,7 +199,7 @@ describe('GatherRunner', function() {
       gatherers: [{}]
     };
 
-    return GatherRunner.loadPage(driver, {config}).then(_ => {
+    return GatherRunner.loadPage(new Progress(), driver, {config}).then(_ => {
       assert.equal(calledNetworkCollect, true);
     });
   });
@@ -218,22 +220,24 @@ describe('GatherRunner', function() {
       }]
     };
 
-    return GatherRunner.afterPass({driver, config}).then(vals => {
+    return GatherRunner.afterPass(new Progress(), {driver, config}).then(vals => {
       assert.equal(calledNetworkCollect, true);
       assert.deepEqual(vals.networkRecords, {x: 1});
     });
   });
 
   it('rejects when not given a URL', () => {
-    return GatherRunner.run({}, {}).then(_ => assert.ok(false), _ => assert.ok(true));
+    return GatherRunner.run(new Progress(), {}, {})
+        .then(_ => assert.ok(false), _ => assert.ok(true));
   });
 
   it('rejects when given a URL of zero length', () => {
-    return GatherRunner.run({}, {url: ''}).then(_ => assert.ok(false), _ => assert.ok(true));
+    return GatherRunner.run(new Progress(), {}, {url: ''})
+        .then(_ => assert.ok(false), _ => assert.ok(true));
   });
 
   it('rejects when not given a config', () => {
-    return GatherRunner.run({}, {url: 'http://example.com'})
+    return GatherRunner.run(new Progress(), {}, {url: 'http://example.com'})
         .then(_ => assert.ok(false), err => {
           assert.ok(/config/i.test(err));
         });
@@ -259,7 +263,7 @@ describe('GatherRunner', function() {
       ]
     }];
 
-    return GatherRunner.run(passes, {
+    return GatherRunner.run(new Progress(), passes, {
       driver: fakeDriver,
       url: 'https://example.com',
       flags,
@@ -286,7 +290,7 @@ describe('GatherRunner', function() {
     }];
     const options = {driver: fakeDriver, url: 'https://example.com', flags: {}, config: {}};
 
-    return GatherRunner.run(passes, options)
+    return GatherRunner.run(new Progress(), passes, options)
       .then(artifacts => {
         assert.ok(artifacts.traces.firstPass);
         assert.ok(artifacts.networkRecords.firstPass);
@@ -309,7 +313,7 @@ describe('GatherRunner', function() {
       ]
     }];
 
-    return GatherRunner.run(passes, {
+    return GatherRunner.run(new Progress(), passes, {
       driver: fakeDriver,
       url: 'https://example.com',
       flags,
@@ -404,7 +408,7 @@ describe('GatherRunner', function() {
     }];
     const options = {driver: fakeDriver, url: 'https://example.com', flags: {}, config: {}};
 
-    return GatherRunner.run(passes, options)
+    return GatherRunner.run(new Progress(), passes, options)
         .then(artifacts => {
           const networkRecords = artifacts.networkRecords.firstPass;
           const p = artifacts.requestCriticalRequestChains(networkRecords);

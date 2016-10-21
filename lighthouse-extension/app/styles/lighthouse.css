@@ -143,6 +143,12 @@ body {
   margin: 0 auto;
 }
 
+.button--cancel {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+}
+
 .subpage {
   position: fixed;
   top: 0;

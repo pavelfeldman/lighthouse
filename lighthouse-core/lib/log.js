@@ -40,16 +40,6 @@ function _log(title, logargs) {
 
 class Emitter extends EventEmitter {
   /**
-   * Fires off all status updates. Listen with
-   * `require('lib/log').events.addListener('status', callback)`
-   */
-  issueStatus(title, args) {
-    if (title === 'status' || title === 'statusEnd') {
-      this.emit(title, args);
-    }
-  }
-
-  /**
    * Fires off all warnings. Listen with
    * `require('lib/log').events.addListener('warning', callback)`
    */
@@ -79,7 +69,6 @@ module.exports = {
   formatProtocol,
   events: new Emitter(),
   log(title) {
-    this.events.issueStatus(title, arguments);
     return _log(title, arguments);
   },
 
@@ -93,7 +82,6 @@ module.exports = {
   },
 
   verbose(title) {
-    this.events.issueStatus(title, arguments);
     return _log(`${title}:verbose`, arguments);
   }
 };

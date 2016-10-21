@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', _ => {
   const statusEl = document.body.querySelector('.status');
   const statusMessageEl = document.body.querySelector('.status__msg');
   const statusDetailsMessageEl = document.body.querySelector('.status__detailsmsg');
+  const cancelButtonEl = document.getElementById('cancel-execution');
   const spinnerEl = document.body.querySelector('.status__spinner');
   const feedbackEl = document.body.querySelector('.feedback');
 
@@ -55,7 +56,7 @@ document.addEventListener('DOMContentLoaded', _ => {
     statusEl.classList.remove(subpageVisibleClass);
   }
 
-  function logstatus([, message, details]) {
+  function logstatus(message, details) {
     statusMessageEl.textContent = message;
     statusDetailsMessageEl.textContent = details;
   }
@@ -110,7 +111,6 @@ document.addEventListener('DOMContentLoaded', _ => {
     return _flatten(auditLists);
   }
 
-  background.listenForStatus(logstatus);
   background.loadSelectedAggregations().then(aggregations => {
     const frag = generateOptionsList(optionsList, aggregations);
     optionsList.appendChild(frag);
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', _ => {
           mobile: true
         },
         restoreCleanState: true
-      }, selectedAudits);
+      }, selectedAudits, logstatus);
     })
     .catch(err => {
       let {message} = err;
@@ -154,6 +154,8 @@ document.addEventListener('DOMContentLoaded', _ => {
 
     optionsEl.classList.remove(subpageVisibleClass);
   });
+
+  cancelButtonEl.addEventListener('click', _ => background.cancelLighthouseInExtension());
 
   chrome.tabs.query({active: true, lastFocusedWindow: true}, function(tabs) {
     if (tabs.length === 0) {

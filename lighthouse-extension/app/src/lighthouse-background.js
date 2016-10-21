@@ -17,6 +17,7 @@
 'use strict';
 
 const ExtensionProtocol = require('../../../lighthouse-core/gather/drivers/extension');
+const Progress = require('../../../lighthouse-core/progress');
 const RawProtocol = require('../../../lighthouse-core/gather/drivers/raw');
 const Runner = require('../../../lighthouse-core/runner');
 const Config = require('../../../lighthouse-core/config/config');
@@ -40,14 +41,17 @@ window.createPageAndPopulate = function(results) {
   });
 };
 
+let progress;
+
 /**
+ * @param {!Progress} progress
  * @param {!Connection} connection
  * @param {string} url
  * @param {!Object} options Lighthouse options.
  * @param {!Array<string>} requestedAudits Names of audits to run.
  * @return {!Promise}
  */
-window.runLighthouseForConnection = function(connection, url, options, requestedAudits) {
+window.runLighthouseForConnection = function(progress, connection, url, options, requestedAudits) {
   // Always start with a freshly parsed default config.
   const runConfig = JSON.parse(JSON.stringify(defaultConfig));
 
@@ -60,21 +64,30 @@ window.runLighthouseForConnection = function(connection, url, options, requested
   const runOptions = Object.assign({}, options, {url, config});
 
   // Run Lighthouse.
-  return Runner.run(connection, runOptions);
+  return Runner.run(progress, connection, runOptions);
 };
 
 /**
  * @param {!Object} options Lighthouse options.
  * @param {!Array<string>} requestedAudits Names of audits to run.
+ * @param {function(string, string)} progressCallback
  * @return {!Promise}
  */
-window.runLighthouseInExtension = function(options, requestedAudits) {
+window.runLighthouseInExtension = function(options, requestedAudits, progressCallback) {
   // Default to 'info' logging level.
   log.setLevel('info');
+  progress = new Progress(progressCallback);
   const connection = new ExtensionProtocol();
   return connection.getCurrentTabURL()
-    .then(url => window.runLighthouseForConnection(connection, url, options, requestedAudits))
+    .then(url => window.runLighthouseForConnection(
+        progress, connection, url, options, requestedAudits))
     .then(results => window.createPageAndPopulate(results));
+};
+
+window.cancelLighthouseInExtension = function() {
+  if (progress) {
+    progress.cancel();
+  }
 };
 
 /**
@@ -88,7 +101,7 @@ window.runLighthouseInWorker = function(port, url, options, requestedAudits) {
   // Default to 'info' logging level.
   log.setLevel('info');
   const connection = new RawProtocol(port);
-  return window.runLighthouseForConnection(connection, url, options, requestedAudits);
+  return window.runLighthouseForConnection(null, connection, url, options, requestedAudits);
 };
 
 /**
@@ -156,10 +169,6 @@ window.loadSelectedAggregations = function() {
       );
     });
   });
-};
-
-window.listenForStatus = function(callback) {
-  log.events.addListener('status', callback);
 };
 
 if (window.chrome && chrome.runtime) {
