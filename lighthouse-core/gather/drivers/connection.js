@@ -23,7 +23,7 @@ class Connection {
 
   constructor() {
     this._lastCommandId = 0;
-    /** @type {!Map<number, function(object)}*/
+    /** @type {!Map<number, {resolve: function(*), reject: function(*), method: string}>}*/
     this._callbacks = new Map();
     this._eventEmitter = new EventEmitter();
   }
@@ -49,7 +49,7 @@ class Connection {
    * @return {!Promise}
    */
   sendCommand(method, params) {
-    log.formatProtocol('method => browser', {method: method, params: params}, 'verbose');
+    log.formatProtocol('method => browser', {method, params}, 'verbose');
     const id = ++this._lastCommandId;
     params = params || {};
     const message = JSON.stringify({id, method, params});
@@ -89,6 +89,8 @@ class Connection {
    */
   handleRawMessage(message) {
     const object = JSON.parse(message);
+    // Remote debugging protocol is JSON RPC 2.0 compiant. In terms of that transport,
+    // responses to the commands carry "id" property, while notifications do not.
     if (object.id) {
       const callback = this._callbacks.get(object.id);
       this._callbacks.delete(object.id);
@@ -114,7 +116,7 @@ class Connection {
    * @protected
    */
   emitNotification(method, params) {
-    this._eventEmitter.emit('notification', {method: method, params: params});
+    this._eventEmitter.emit('notification', {method, params});
   }
 
   /**

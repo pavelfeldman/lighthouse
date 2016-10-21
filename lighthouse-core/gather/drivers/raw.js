@@ -24,15 +24,11 @@ const Connection = require('./connection.js');
  * @interface
  */
 class Port {
-  /* eslint-disable no-unused-vars */
-
   /**
    * @param {!string} eventName, 'message', 'close'
    * @param {function(string|undefined)} cb
    */
   on(eventName, cb) { }
-
-  /* eslint-disable no-unused-vars */
 
   /**
    * @param {string} message
