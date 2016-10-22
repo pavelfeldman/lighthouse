@@ -56,7 +56,12 @@ document.addEventListener('DOMContentLoaded', _ => {
     statusEl.classList.remove(subpageVisibleClass);
   }
 
+  let wasCanceled;
+
   function logstatus(message, details) {
+    if (wasCanceled) {
+      return;
+    }
     statusMessageEl.textContent = message;
     statusDetailsMessageEl.textContent = details;
   }
@@ -117,6 +122,7 @@ document.addEventListener('DOMContentLoaded', _ => {
   });
 
   generateReportEl.addEventListener('click', () => {
+    wasCanceled = false;
     startSpinner();
     feedbackEl.textContent = '';
 
@@ -136,7 +142,9 @@ document.addEventListener('DOMContentLoaded', _ => {
         message = 'You probably have DevTools open.' +
           ' Close DevTools to use lighthouse';
       }
-      feedbackEl.textContent = message;
+      if (!wasCanceled) {
+        feedbackEl.textContent = message;
+      }
       stopSpinner();
       background.console.error(err);
     });
@@ -155,7 +163,12 @@ document.addEventListener('DOMContentLoaded', _ => {
     optionsEl.classList.remove(subpageVisibleClass);
   });
 
-  cancelButtonEl.addEventListener('click', _ => background.cancelLighthouseInExtension());
+  cancelButtonEl.addEventListener('click', _ => {
+    logstatus('Canceled by user');
+    feedbackEl.textContent = '';
+    wasCanceled = true;
+    background.cancelLighthouseInExtension();
+  });
 
   chrome.tabs.query({active: true, lastFocusedWindow: true}, function(tabs) {
     if (tabs.length === 0) {

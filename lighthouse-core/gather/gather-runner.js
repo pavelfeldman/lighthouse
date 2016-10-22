@@ -71,7 +71,7 @@ class GatherRunner {
   static loadPage(progress, driver, options) {
     return new Promise((resolve, reject) => {
       // Set up a watch dog to reject upon progress cancel.
-      var interval = setInterval(_ => {
+      const interval = setInterval(_ => {
         if (progress.isCanceled()) {
           clearInterval(interval);
           reject();
@@ -92,7 +92,8 @@ class GatherRunner {
           .then(passThrough => {
             clearInterval(interval);
             resolve(passThrough);
-          });
+          })
+          .catch(reject);
     });
   }
 
