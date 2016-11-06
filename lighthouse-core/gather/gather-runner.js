@@ -24,11 +24,13 @@ const path = require('path');
  * Execution sequence when GatherRunner.run() is called:
  *
  * 1. Setup
- *   A. driver.connect()
- *   B. GatherRunner.setupDriver()
- *     i. beginEmulation
- *     ii. cleanAndDisableBrowserCaches
- *     iii. clearDataForOrigin
+ *   A. navigate to about:blank
+ *   B. driver.connect()
+ *   C. GatherRunner.setupDriver()
+ *     i. assertNoSameOriginServiceWorkerClients
+ *     ii. beginEmulation
+ *     iii. cleanAndDisableBrowserCaches
+ *     iiii. clearDataForOrigin
  *
  * 2. For each pass in the config:
  *   A. GatherRunner.beforePass()
@@ -44,7 +46,7 @@ const path = require('path');
  *     ii. all gatherer's afterPass()
  *
  * 3. Teardown
- *   A. driver.disconnect()
+ *   A. GatherRunner.disposeDriver()
  *   B. collect all artifacts and return them
  */
 class GatherRunner {
@@ -105,11 +107,19 @@ class GatherRunner {
    */
   static setupDriver(progress, driver, options) {
     progress.updateStatus('Initializing…');
-    // Enable emulation if required.
-    return Promise.resolve(options.flags.mobile && driver.beginEmulation())
+    // Enable emulation based on flags
+    return driver.assertNoSameOriginServiceWorkerClients(options.url)
+      .then(_ => driver.beginEmulation(options.flags))
       .then(_ => driver.enableRuntimeEvents())
       .then(_ => driver.cleanAndDisableBrowserCaches())
       .then(_ => driver.clearDataForOrigin(options.url));
+  }
+
+  static disposeDriver(progress, driver) {
+    // We dont need to hold up the reporting for the reload/disconnect,
+    // so we will not return a promise in here.
+    progress.updateStatus('Disconnecting from browser...');
+    driver.disconnect();
   }
 
   /**
@@ -228,16 +238,17 @@ class GatherRunner {
       return Promise.reject(new Error('You must provide a config'));
     }
 
-    // Default mobile emulation and page loading to true.
-    // The extension will switch these off initially.
-    if (typeof options.flags.mobile === 'undefined') {
-      options.flags.mobile = true;
+    // CPU throttling is temporarily off by default
+    if (typeof options.flags.disableCpuThrottling === 'undefined') {
+      options.flags.disableCpuThrottling = true;
     }
 
     passes = this.instantiateGatherers(passes, options.config.configDir);
 
     return driver.connect()
+      .then(_ => GatherRunner.loadBlank(driver))
       .then(_ => GatherRunner.setupDriver(progress, driver, options))
+
       // Run each pass
       .then(_ => {
         // If the main document redirects, we'll update this to keep track
@@ -266,10 +277,8 @@ class GatherRunner {
         });
       })
       .catch(_ => progress.isCanceled() ? progress.updateStatus('Canceled by user') : undefined)
+      .then(_ => GatherRunner.disposeDriver(progress, driver))
       .then(_ => {
-        progress.updateStatus('Disconnecting from browser...');
-        return driver.disconnect();
-      }).then(_ => {
         // Collate all the gatherer results.
         const computedArtifacts = this.instantiateComputedArtifacts();
         const artifacts = Object.assign({}, computedArtifacts, tracingData);
@@ -284,6 +293,12 @@ class GatherRunner {
           });
         });
         return artifacts;
+      })
+      // cleanup on error
+      .catch(err => {
+        GatherRunner.disposeDriver(progress, driver);
+
+        throw err;
       });
   }
 

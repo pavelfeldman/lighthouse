@@ -26,7 +26,7 @@ if (!environment.checkNodeCompatibility()) {
 const Progress = require('./progress');
 const Runner = require('./runner');
 const log = require('./lib/log.js');
-const ChromeProtocol = require('./gather/drivers/cri.js');
+const ChromeProtocol = require('./gather/connections/cri.js');
 const Config = require('./config/config');
 
 /**
@@ -68,6 +68,6 @@ module.exports = function(url, flags, configJSON) {
 };
 
 module.exports.getAuditList = Runner.getAuditList;
-module.exports.traceCategories = require('./gather/drivers/driver').traceCategories;
+module.exports.traceCategories = require('./gather/driver').traceCategories;
 module.exports.Audit = require('./audits/audit');
 module.exports.Gatherer = require('./gather/gatherers/gatherer');

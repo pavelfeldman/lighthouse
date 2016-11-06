@@ -2,10 +2,13 @@
 
 > Lighthouse analyzes web apps and web pages, collecting modern performance metrics and insights on developer best practices.
 
+HTML report:
+
 ![image](https://cloud.githubusercontent.com/assets/39191/19172855/ed871100-8bd8-11e6-9ea6-8aeece7760d4.png)
 
-![image](https://cloud.githubusercontent.com/assets/39191/19172762/60358d9a-8bd8-11e6-8c22-7fcb119ea0f5.png)
+Default CLI output:
 
+![image](https://cloud.githubusercontent.com/assets/39191/19172762/60358d9a-8bd8-11e6-8c22-7fcb119ea0f5.png)
 
 Lighthouse requires Chrome 52 or later.
 
@@ -37,8 +40,17 @@ lighthouse --help
 #### Setup
 ```sh
 git clone https://github.com/GoogleChrome/lighthouse
+
 cd lighthouse
 npm install
+
+# The CLI is authored in TypeScript and requires compilation:
+cd lighthouse-cli
+npm install
+npm run build
+
+# To run the TS compiler in watch mode:
+# cd lighthouse-cli && npm run dev
 ```
 
 #### Run
@@ -58,16 +70,32 @@ You can supply your own run configuration to customize what audits you want deta
 
 ## Custom audits and gatherers
 
-The audits and gatherers checked into the lighthouse repo are available to any configuration. If you're interested in writing your own audits or gatherers, you can use them with Lighthouse without neccessarily contributing upstream.
+The audits and gatherers checked into the lighthouse repo are available to any configuration. If you're interested in writing your own audits or gatherers, you can use them with Lighthouse without necessarily contributing upstream.
 
 Better docs coming soon, but in the meantime look at [PR #593](https://github.com/GoogleChrome/lighthouse/pull/593), and the tests [valid-custom-audit.js](https://github.com/GoogleChrome/lighthouse/blob/3f5c43f186495a7f3ecc16c012ab423cd2bac79d/lighthouse-core/test/fixtures/valid-custom-audit.js) and [valid-custom-gatherer.js](https://github.com/GoogleChrome/lighthouse/blob/3f5c43f186495a7f3ecc16c012ab423cd2bac79d/lighthouse-core/test/fixtures/valid-custom-gatherer.js). If you have questions, please file an issue and we'll help out!
 
+## Do Better Web
+
+**Do Better Web** is an initiative within Lighthouse to help web developers modernize their existing web applications. By running a set of tests, developers can discover new web platform APIs, become aware of performance pitfalls, and learn (newer) best practices. In other words, do better on the web!
+
+DBW is implemented as a set of standalone [gatherers](https://github.com/GoogleChrome/lighthouse/tree/master/lighthouse-core/gather/gatherers/dobetterweb), [audits](https://github.com/GoogleChrome/lighthouse/tree/master/lighthouse-core/audits/dobetterweb), and a [custom run configuration](https://github.com/GoogleChrome/lighthouse/blob/master/lighthouse-core/config/dobetterweb.json) that can be run alongside the core Lighthouse tests.
+
+To run DBW:
+
+    npm run dbw http://example.com
+
+which is a shorthand for:
+
+    npm run start -- --config-path=lighthouse-core/config/dobetterweb.json --disable-device-emulation --disable-cpu-throttling --disable-network-throttling --output=html --output-path=results.html`
+
+If you'd like to contribute, check the [list of issues](https://github.com/GoogleChrome/lighthouse/issues?q=is%3Aissue+is%3Aopen+label%3ADoBetterWeb) or propose a new audit by filing an issue.
+
 ## Lighthouse as trace processor
 
-Lighthouse can be used to analyze trace and performance data collected from other tools (like WebPageTest and ChromeDriver). The `traces` and `performanceLog` artifact items can be provided using a string for the absolute path on disk. The perf log is captured from the Network domain (a la ChromeDriver's [`enableNetwork` option](https://sites.google.com/a/chromium.org/chromedriver/capabilities#TOC-perfLoggingPrefs-object) and reformatted slightly. As an example, here's a trace-only run that's reporting on user timings and critical request chains:
+Lighthouse can be used to analyze trace and performance data collected from other tools (like WebPageTest and ChromeDriver). The `traces` and `performanceLog` artifact items can be provided using a string for the absolute path on disk. The perf log is captured from the Network domain (a la ChromeDriver's [`enableNetwork` option](https://sites.google.com/a/chromium.org/chromedriver/capabilities#TOC-perfLoggingPrefs-object)) and reformatted slightly. As an example, here's a trace-only run that's reporting on user timings and critical request chains:
 
 ##### `config.json`
-```js
+```json
 {
   "audits": [
     "user-timings",
@@ -107,34 +135,39 @@ $ lighthouse --help
 lighthouse <url>
 
 Logging:
-  --verbose  Displays verbose logging                                                 [boolean]
-  --quiet    Displays no progress or debug logs                                       [boolean]
+  --verbose  Displays verbose logging                                                      [boolean]
+  --quiet    Displays no progress or debug logs                                            [boolean]
 
 Configuration:
-  --mobile                 Emulates a Nexus 5X                                  [default: true]
-  --save-assets            Save the trace contents & screenshots to disk              [boolean]
-  --save-artifacts         Save all gathered artifacts to disk                        [boolean]
-  --list-all-audits        Prints a list of all available audits and exits            [boolean]
-  --list-trace-categories  Prints a list of all required trace categories and exits   [boolean]
-  --config-path            The path to the config JSON.
-  --perf                   Use a performance-test-only configuration                  [boolean]
+  --disable-device-emulation    Disable device emulation                                   [boolean]
+  --disable-cpu-throttling      Disable cpu throttling                                     [boolean]
+  --disable-network-throttling  Disable network throttling                                 [boolean]
+  --save-assets                 Save the trace contents & screenshots to disk              [boolean]
+  --save-artifacts              Save all gathered artifacts to disk                        [boolean]
+  --list-all-audits             Prints a list of all available audits and exits            [boolean]
+  --list-trace-categories       Prints a list of all required trace categories and exits   [boolean]
+  --config-path                 The path to the config JSON.
+  --perf                        Use a performance-test-only configuration                  [boolean]
 
 Output:
   --output       Reporter for the results
-                         [choices: "pretty", "json", "html"]                [default: "pretty"]
+                         [choices: "pretty", "json", "html"]                     [default: "pretty"]
   --output-path  The file path to output the results
-                 Example: --output-path=./lighthouse-results.html           [default: "stdout"]
+                 Example: --output-path=./lighthouse-results.html                [default: "stdout"]
 
 Options:
-  --help             Show help                                                        [boolean]
-  --version          Show version number                                              [boolean]
-  --skip-autolaunch  Skip autolaunch of Chrome when accessing port 9222 fails         [boolean]
-  --select-chrome    Choose Chrome location when multiple installations are found     [boolean]
+  --help             Show help                                                             [boolean]
+  --version          Show version number                                                   [boolean]
+  --skip-autolaunch  Skip autolaunch of Chrome when accessing port 9222 fails              [boolean]
+  --select-chrome    Interactively choose version of Chrome to use when multiple
+                     installations are found                                          [boolean]
 ```
 
 ## Lighthouse w/ mobile devices
 
 Lighthouse can run against a real mobile device. You can follow the [Remote Debugging on Android (Legacy Workflow)](https://developer.chrome.com/devtools/docs/remote-debugging-legacy) up through step 3.3, but the TL;DR is install & run adb, enable USB debugging, then port forward 9222 from the device to the machine with Lighthouse.
+
+You'll likely want to use the CLI flags `--disable-device-emulation --disable-cpu-throttling` and potentially `--disable-network-throttling`.
 
 ```sh
 $ adb kill-server
@@ -146,14 +179,14 @@ $ adb devices -l
 
 $ adb forward tcp:9222 localabstract:chrome_devtools_remote
 
-$ lighthouse --mobile false https://mysite.com
+$ lighthouse --disable-device-emulation --disable-cpu-throttling https://mysite.com
 ```
 
 ## Tests
 
 Some basic unit tests forked are in `/test` and run via mocha. eslint is also checked for style violations.
 
-```js
+```sh
 # lint and test all files
 npm test
 
@@ -227,7 +260,7 @@ Promise.resolve({
   rawValue: {},
   // debugString: Some *specific* error string for helping the user figure out why they failed here.
   //   The reporter can handle *general* feedback on how to fix, e.g. links to the docs
-  debugString: 'Your manifest 404ed'
+  debugString: 'Your manifest 404ed',
   // fault:  Optional argument when the audit doesn't cover whatever it is you're doing,
   //   e.g. we can't parse your particular corner case out of a trace yet.
   //   Whatever is in `rawValue` and `score` would be N/A in these cases

@@ -163,7 +163,7 @@
             "time": 18.540999999999997
           }
         ],
-        "formatter": "estimatedInputLatency"
+        "formatter": "null"
       },
       "name": "estimated-input-latency",
       "category": "Performance",
@@ -409,7 +409,7 @@
       "category": "Accessibility",
       "description": "Every form element has a label"
     },
-    "tab-index": {
+    "tabindex": {
       "score": true,
       "displayValue": "",
       "rawValue": true,
@@ -417,7 +417,7 @@
       "extendedInfo": {
         "formatter": "accessibility"
       },
-      "name": "tab-index",
+      "name": "tabindex",
       "category": "Accessibility",
       "description": "No element has a tabindex attribute greater than 0"
     },

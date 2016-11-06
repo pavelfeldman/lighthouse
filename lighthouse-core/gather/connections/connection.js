@@ -94,20 +94,34 @@ class Connection {
     if (object.id) {
       const callback = this._callbacks.get(object.id);
       this._callbacks.delete(object.id);
+
       if (object.error) {
-        log.formatProtocol('method <= browser ERR',
-            {method: callback.method, params: object.result}, 'error');
-        callback.reject(object.result);
-        return;
+        return this._handleRawError(object, callback);
       }
       log.formatProtocol('method <= browser OK',
           {method: callback.method, params: object.result}, 'verbose');
       callback.resolve(object.result);
       return;
     }
-    log.formatProtocol('method <= browser EVENT',
-        {method: object.method, params: object.result}, 'verbose');
+    log.formatProtocol('<= event',
+        {method: object.method, params: object.params}, 'verbose');
     this.emitNotification(object.method, object.params);
+  }
+
+  /**
+   * @param {{error: {message: string}}} object
+   * @param {{reject: function(*), method: string}} callback
+   * @private
+   */
+  _handleRawError(object, callback) {
+    // We proactively disable a few domains. Ignore any errors
+    if (object.error.message && object.error.message.includes('DOM agent hasn\'t been enabled')) {
+      callback.resolve();
+      return;
+    }
+    log.formatProtocol('method <= browser ERR',
+        {method: callback.method}, 'error');
+    callback.reject(new Error(`Raw Protocol (${callback.method}) ${object.error.message}`));
   }
 
   /**

@@ -17,27 +17,21 @@
 'use strict';
 
 const fs = require('fs');
-const log = require('./lib/log');
 const path = require('path');
 const url = require('url');
 
 const Aggregate = require('./aggregator/aggregate');
-const Driver = require('./gather/drivers/driver.js');
+const Driver = require('./gather/driver');
 const GatherRunner = require('./gather/gather-runner');
 const Progress = require('./progress');
 const assetSaver = require('./lib/asset-saver');
+const log = require('./lib/log');
 
 class Runner {
   static run(progress, connection, opts) {
     progress = progress || new Progress();
     // Clean opts input.
     opts.flags = opts.flags || {};
-
-    // Default mobile emulation and page loading to true.
-    // The extension will switch these off initially.
-    if (typeof opts.flags.mobile === 'undefined') {
-      opts.flags.mobile = true;
-    }
 
     const config = opts.config;
 
@@ -153,7 +147,7 @@ class Runner {
   static getAuditList() {
     return fs
         .readdirSync(path.join(__dirname, './audits'))
-        .filter(f => /\.js$/.test(f));
+        .filter(f => /\.js$/.test(f) && f !== 'audit.js');
   }
 
   /**
@@ -163,7 +157,7 @@ class Runner {
   static getGathererList() {
     return fs
         .readdirSync(path.join(__dirname, './gather/gatherers'))
-        .filter(f => /\.js$/.test(f));
+        .filter(f => /\.js$/.test(f) && f !== 'gatherer.js');
   }
 
   /**

@@ -16,13 +16,13 @@
  */
 'use strict';
 
-const NetworkRecorder = require('../../lib/network-recorder');
-const emulation = require('../../lib/emulation');
-const Element = require('../../lib/element');
+const NetworkRecorder = require('../lib/network-recorder');
+const emulation = require('../lib/emulation');
+const Element = require('../lib/element');
 const EventEmitter = require('events').EventEmitter;
 const parseURL = require('url').parse;
 
-const log = require('../../lib/log.js');
+const log = require('../lib/log.js');
 
 const MAX_WAIT_FOR_FULLY_LOADED = 25 * 1000;
 const PAUSE_AFTER_LOAD = 500;
@@ -174,6 +174,60 @@ class Driver {
       });
 
       this.sendCommand('ServiceWorker.enable').catch(reject);
+    });
+  }
+
+  getServiceWorkerRegistrations() {
+    return new Promise((resolve, reject) => {
+      this.once('ServiceWorker.workerRegistrationUpdated', data => {
+        this.sendCommand('ServiceWorker.disable')
+          .then(_ => resolve(data), reject);
+      });
+
+      this.sendCommand('ServiceWorker.enable').catch(reject);
+    });
+  }
+
+  /**
+   * Rejects if any open tabs would share a service worker with the target URL.
+   * This includes the target tab, so navigation to something like about:blank
+   * should be done before calling.
+   * @param {!string} pageUrl
+   * @return {!Promise}
+   */
+  assertNoSameOriginServiceWorkerClients(pageUrl) {
+    let registrations;
+    let versions;
+    return this.getServiceWorkerRegistrations().then(data => {
+      registrations = data.registrations;
+    }).then(_ => this.getServiceWorkerVersions()).then(data => {
+      versions = data.versions;
+    }).then(_ => {
+      const parsedURL = parseURL(pageUrl);
+      const origin = `${parsedURL.protocol}//${parsedURL.hostname}` +
+          (parsedURL.port ? `:${parsedURL.port}` : '');
+
+      registrations
+        .filter(reg => {
+          const parsedURL = parseURL(reg.scopeURL);
+          const swOrigin = `${parsedURL.protocol}//${parsedURL.hostname}` +
+              (parsedURL.port ? `:${parsedURL.port}` : '');
+
+          return origin === swOrigin;
+        })
+        .forEach(reg => {
+          versions.forEach(ver => {
+            // Ignore workers unaffiliated with this registration
+            if (ver.registrationId !== reg.registrationId) {
+              return;
+            }
+
+            // Throw if service worker for this origin has active controlledClients.
+            if (ver.controlledClients && ver.controlledClients.length > 0) {
+              throw new Error('You probably have multiple tabs open to the same origin.');
+            }
+          });
+        });
     });
   }
 
@@ -366,7 +420,16 @@ class Driver {
       options: 'sampling-frequency=10000'  // 1000 is default and too slow.
     };
 
-    return this.sendCommand('Page.enable')
+    // Disable any domains that could interfere or add overhead to the trace
+    return this.sendCommand('Debugger.disable')
+      .then(_ => this.sendCommand('CSS.disable'))
+      .then(_ => {
+        return this.sendCommand('DOM.disable')
+          // If it wasn't already enabled, it will throw; ignore these. See #861
+          .catch(_ => {});
+      })
+      // Enable Page domain to wait for Page.loadEventFired
+      .then(_ => this.sendCommand('Page.enable'))
       .then(_ => this.sendCommand('Tracing.start', tracingOpts));
   }
 
@@ -453,11 +516,22 @@ class Driver {
     return this.sendCommand('Runtime.enable');
   }
 
-  beginEmulation() {
-    return Promise.all([
-      emulation.enableNexus5X(this),
-      emulation.enableNetworkThrottling(this)
-    ]);
+  beginEmulation(flags) {
+    const emulations = [];
+
+    if (!flags.disableDeviceEmulation) {
+      emulations.push(emulation.enableNexus5X(this));
+    }
+
+    if (!flags.disableNetworkThrottling) {
+      emulations.push(emulation.enableNetworkThrottling(this));
+    }
+
+    if (!flags.disableCpuThrottling) {
+      emulations.push(emulation.enableCPUThrottling(this));
+    }
+
+    return Promise.all(emulations);
   }
 
   /**
@@ -470,13 +544,13 @@ class Driver {
 
   /**
    * Enable internet connection, using emulated mobile settings if
-   * `options.flags.mobile` is true.
+   * `options.flags.disableNetworkThrottling` is false.
    * @param {!Object} options
    * @return {!Promise}
    */
   goOnline(options) {
     return this.sendCommand('Network.enable').then(_ => {
-      if (options.flags.mobile) {
+      if (!options.flags.disableNetworkThrottling) {
         return emulation.enableNetworkThrottling(this);
       }
 

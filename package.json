@@ -1,6 +1,6 @@
 {
   "name": "lighthouse",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "description": "Lighthouse",
   "main": "./lighthouse-core/index.js",
   "bin": {
@@ -12,7 +12,7 @@
   },
   "scripts": {
     "lint": "[ \"$CI\" = true ] && eslint --quiet . || eslint .",
-    "smoke": "lighthouse-cli/test/smokehouse/offline-local/run-tests.sh",
+    "smoke": "lighthouse-cli/test/smokehouse/offline-local/run-tests.sh; lighthouse-cli/test/smokehouse/dobetterweb/run-tests.sh",
     "coverage": "node $__node_harmony $(npm bin)/istanbul cover -x \"**/third_party/**\" _mocha -- $(find */test -name '*-test.js') --timeout 10000 --reporter progress",
     "coveralls": "npm run coverage && cat ./coverage/lcov.info | coveralls",
     "start": "node ./lighthouse-cli/index.js",
@@ -22,10 +22,11 @@
     "closure": "cd lighthouse-core && closure/closure-type-checking.js",
     "watch": "lighthouse-core/scripts/run-mocha.sh --watch",
     "chrome": "lighthouse-core/scripts/launch-chrome.sh",
-    "dbw": "npm run start -- --config-path=lighthouse-core/config/dobetterweb.json --mobile=false --output=html --output-path=results.html",
+    "dbw": "npm run start -- --config-path=lighthouse-core/config/dobetterweb.json --disable-device-emulation --disable-cpu-throttling --disable-network-throttling --output=html --output-path=results.html",
     "smokehouse": "node $__node_harmony lighthouse-cli/test/smokehouse/smokehouse.js"
   },
   "devDependencies": {
+    "@types/node": "^6.0.45",
     "babel-core": "^6.16.0",
     "babel-plugin-transform-es2015-destructuring": "^6.9.0",
     "coveralls": "^2.11.9",

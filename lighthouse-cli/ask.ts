@@ -19,9 +19,7 @@
 
 const readline = require('readline');
 
-module.exports = ask;
-
-function ask(question, options) {
+function ask(question: string, options: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
     const iface = readline.createInterface(process.stdin, process.stdout);
     const optionsStr = options.map((o, i) => i + 1 + '. ' + o).join('\r\n');
@@ -29,7 +27,7 @@ function ask(question, options) {
     iface.setPrompt(question + '\r\n' + optionsStr + '\r\nChoice: ');
     iface.prompt();
 
-    iface.on('line', _answer => {
+    iface.on('line', (_answer: string) => {
       const answer = toInt(_answer);
       if (answer > 0 && answer <= options.length) {
         iface.close();
@@ -41,7 +39,9 @@ function ask(question, options) {
   });
 }
 
-function toInt(n) {
+function toInt(n: string): number {
   const result = parseInt(n, 10);
   return isNaN(result) ? 0 : result;
 }
+
+export {ask};

@@ -43,8 +43,8 @@ const NEXUS5X_USERAGENT = {
 
 const TYPICAL_MOBILE_THROTTLING_METRICS = {
   latency: 150, // 150ms
-  downloadThroughput: 1.6 * 1024 * 1024 / 8, // 1.6Mbps
-  uploadThroughput: 750 * 1024 / 8, // 750Kbps
+  downloadThroughput: Math.floor(1.6 * 1024 * 1024 / 8), // 1.6Mbps
+  uploadThroughput: Math.floor(750 * 1024 / 8), // 750Kbps
   offline: false
 };
 
@@ -61,6 +61,13 @@ const NO_THROTTLING_METRICS = {
   downloadThroughput: 0,
   uploadThroughput: 0,
   offline: false
+};
+
+const NO_CPU_THROTTLE_METRICS = {
+  rate: 1
+};
+const CPU_THROTTLE_METRICS = {
+  rate: 5
 };
 
 function enableNexus5X(driver) {
@@ -113,9 +120,19 @@ function goOffline(driver) {
   return driver.sendCommand('Network.emulateNetworkConditions', OFFLINE_METRICS);
 }
 
+function enableCPUThrottling(driver) {
+  return driver.sendCommand('Emulation.setCPUThrottlingRate', CPU_THROTTLE_METRICS);
+}
+
+function disableCPUThrottling(driver) {
+  return driver.sendCommand('Emulation.setCPUThrottlingRate', NO_CPU_THROTTLE_METRICS);
+}
+
 module.exports = {
   enableNexus5X,
   enableNetworkThrottling,
   disableNetworkThrottling,
+  enableCPUThrottling,
+  disableCPUThrottling,
   goOffline
 };

@@ -29,6 +29,12 @@ module.exports = {
   beginEmulation() {
     return Promise.resolve();
   },
+  assertNoSameOriginServiceWorkerClients() {
+    return Promise.resolve();
+  },
+  reloadForCleanStateIfNeeded() {
+    return Promise.resolve();
+  },
   enableRuntimeEvents() {
     return Promise.resolve();
   },

@@ -8,20 +8,27 @@
       "../gather/gatherers/dobetterweb/appcache",
       "../gather/gatherers/dobetterweb/console-time-usage",
       "../gather/gatherers/dobetterweb/datenow",
+      "../gather/gatherers/dobetterweb/document-event-listeners",
       "../gather/gatherers/dobetterweb/document-write",
+      "../gather/gatherers/dobetterweb/geolocation-on-start",
+      "../gather/gatherers/dobetterweb/links-blocking-first-paint",
       "../gather/gatherers/dobetterweb/websql"
     ]
   }],
 
   "audits": [
+    "../audits/is-on-https",
     "../audits/dobetterweb/appcache-manifest",
+    "../audits/dobetterweb/geolocation-on-start",
+    "../audits/dobetterweb/link-blocking-first-paint",
     "../audits/dobetterweb/no-console-time",
     "../audits/dobetterweb/no-datenow",
     "../audits/dobetterweb/no-document-write",
+    "../audits/dobetterweb/no-mutation-events",
     "../audits/dobetterweb/no-old-flexbox",
     "../audits/dobetterweb/no-websql",
     "../audits/dobetterweb/uses-http2",
-    "../audits/is-on-https"
+    "../audits/dobetterweb/uses-passive-event-listeners"
   ],
 
   "aggregations": [{
@@ -65,12 +72,24 @@
         },
         "no-console-time": {
           "expectedValue": false
+        },
+        "uses-passive-event-listeners": {
+          "expectedValue": true
+        },
+        "no-mutation-events": {
+          "expectedValue": false
         }
       }
     }, {
-      "name": "Avoiding APIs that harm the user experience",
+      "name": "Avoiding practices that harm the user experience",
       "audits": {
         "no-document-write": {
+          "expectedValue": false
+        },
+        "link-blocking-first-paint": {
+          "expectedValue": false
+        },
+        "geolocation-on-start": {
           "expectedValue": false
         }
       }

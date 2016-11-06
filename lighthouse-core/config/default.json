@@ -9,9 +9,7 @@
       "theme-color",
       "manifest",
       "accessibility",
-      "content-width",
-      "cache-contents",
-      "geolocation-on-start"
+      "content-width"
     ]
   },
   {
@@ -53,15 +51,14 @@
     "manifest-short-name",
     "manifest-short-name-length",
     "manifest-start-url",
-    "meta-theme-color",
+    "theme-color-meta",
     "aria-valid-attr",
     "aria-allowed-attr",
     "color-contrast",
     "image-alt",
     "label",
     "tabindex",
-    "content-width",
-    "geolocation-on-start"
+    "content-width"
   ],
 
   "aggregations": [{
@@ -78,10 +75,6 @@
           "weight": 1
         },
         "works-offline": {
-          "expectedValue": true,
-          "weight": 1
-        },
-        "cache-start-url": {
           "expectedValue": true,
           "weight": 1
         }
@@ -269,10 +262,6 @@
           "weight": 1
         },
         "manifest-display": {
-          "expectedValue": true,
-          "weight": 1
-        },
-        "geolocation-on-start": {
           "expectedValue": true,
           "weight": 1
         },
